@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:milk_ledger/models/milk_category.dart';
 import 'package:milk_ledger/models/milk_entry.dart';
 import 'package:milk_ledger/models/settings.dart';
 import 'package:milk_ledger/repository/ledger_repository.dart';
@@ -10,11 +11,22 @@ final ledgerRepositoryProvider = Provider<LedgerRepository>((ref) {
 
 final initProvider = FutureProvider<void>((ref) async {
   await ref.read(ledgerRepositoryProvider).init();
+  // Migrate existing entries to have default category
+  await ref.read(ledgerRepositoryProvider).migrateEntriesToDefaultCategory();
+});
+
+// Current selected month for filtering
+final currentMonthProvider = StateProvider<DateTime>((ref) {
+  final now = DateTime.now();
+  return DateTime(now.year, now.month);
 });
 
 final entriesProvider = StateNotifierProvider<EntriesNotifier, List<MilkEntry>>((ref) {
   final repo = ref.read(ledgerRepositoryProvider);
-  return EntriesNotifier(repo)..refresh();
+  final currentMonth = ref.watch(currentMonthProvider);
+  final notifier = EntriesNotifier(repo);
+  notifier.refreshForMonth(currentMonth);
+  return notifier;
 });
 
 class EntriesNotifier extends StateNotifier<List<MilkEntry>> {
@@ -23,6 +35,10 @@ class EntriesNotifier extends StateNotifier<List<MilkEntry>> {
 
   void refresh() {
     state = _repo.getAllEntries();
+  }
+
+  void refreshForMonth(DateTime month) {
+    state = _repo.getEntriesForMonth(month);
   }
 
   MilkEntry? get lastEntry => _repo.getLastEntry();
@@ -34,6 +50,11 @@ class EntriesNotifier extends StateNotifier<List<MilkEntry>> {
       final d = DateTime(entry.date.year, entry.date.month, entry.date.day);
       return d == target;
     });
+  }
+
+  // Get entries for all time (used by monthly summary)
+  List<MilkEntry> getAllEntries() {
+    return _repo.getAllEntries();
   }
 
   Future<void> add(MilkEntry entry) async {
@@ -83,6 +104,35 @@ class SettingsNotifier extends StateNotifier<Settings> {
   Future<void> update(Settings settings) async {
     await _repo.updateSettings(settings);
     state = settings;
+  }
+}
+
+final categoriesProvider = StateNotifierProvider<CategoriesNotifier, List<MilkCategory>>((ref) {
+  final repo = ref.read(ledgerRepositoryProvider);
+  return CategoriesNotifier(repo)..refresh();
+});
+
+class CategoriesNotifier extends StateNotifier<List<MilkCategory>> {
+  CategoriesNotifier(this._repo) : super(const []);
+  final LedgerRepository _repo;
+
+  void refresh() {
+    state = _repo.getAllCategories();
+  }
+
+  Future<void> add(MilkCategory category) async {
+    await _repo.addCategory(category);
+    refresh();
+  }
+
+  Future<void> update(MilkCategory category) async {
+    await _repo.updateCategory(category);
+    refresh();
+  }
+
+  Future<void> remove(String id) async {
+    await _repo.deleteCategory(id);
+    refresh();
   }
 }
 

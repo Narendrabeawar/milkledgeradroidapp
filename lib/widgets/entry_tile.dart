@@ -29,7 +29,7 @@ class EntryTile extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('$date • ${entry.paymentType.name.toUpperCase()}${entry.note == null ? '' : ' • ${entry.note}'}'),
+            Text('$date • ${entry.milkCategory.name} • ${entry.paymentType.name.toUpperCase()}${entry.note == null ? '' : ' • ${entry.note}'}'),
             Text('Total: $amount $currency', style: Theme.of(context).textTheme.bodySmall),
           ],
         ),

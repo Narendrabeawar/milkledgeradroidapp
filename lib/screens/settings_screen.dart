@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:milk_ledger/models/settings.dart';
 import 'package:milk_ledger/providers.dart';
+import 'package:milk_ledger/screens/category_management_screen.dart';
 import 'package:milk_ledger/services/notification_service.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -113,6 +114,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               label: const Text('Send test notification'),
             ),
           ],
+          const SizedBox(height: 20),
+          ListTile(
+            leading: const Icon(Icons.category_outlined),
+            title: const Text('Milk Categories'),
+            subtitle: const Text('Manage milk categories'),
+            trailing: const Icon(Icons.arrow_forward_ios),
+            onTap: () => Navigator.pushNamed(context, CategoryManagementScreen.route),
+          ),
           const SizedBox(height: 20),
           FilledButton.icon(
             onPressed: () async {

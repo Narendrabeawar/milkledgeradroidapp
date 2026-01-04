@@ -1,4 +1,5 @@
 import 'package:hive/hive.dart';
+import 'package:milk_ledger/models/milk_category.dart';
 import 'package:milk_ledger/models/payment_type.dart';
 
 @HiveType(typeId: 11)
@@ -19,6 +20,9 @@ class MilkEntry {
   final PaymentType paymentType;
 
   @HiveField(5)
+  final MilkCategory milkCategory;
+
+  @HiveField(6)
   final String? note;
 
   const MilkEntry({
@@ -27,6 +31,7 @@ class MilkEntry {
     required this.liters,
     required this.pricePerLiter,
     required this.paymentType,
+    required this.milkCategory,
     this.note,
   });
 
@@ -38,6 +43,7 @@ class MilkEntry {
     double? liters,
     double? pricePerLiter,
     PaymentType? paymentType,
+    MilkCategory? milkCategory,
     String? note,
   }) {
     return MilkEntry(
@@ -46,6 +52,7 @@ class MilkEntry {
       liters: liters ?? this.liters,
       pricePerLiter: pricePerLiter ?? this.pricePerLiter,
       paymentType: paymentType ?? this.paymentType,
+      milkCategory: milkCategory ?? this.milkCategory,
       note: note ?? this.note,
     );
   }
@@ -67,14 +74,15 @@ class MilkEntryAdapter extends TypeAdapter<MilkEntry> {
       liters: (fields[2] as num).toDouble(),
       pricePerLiter: (fields[3] as num).toDouble(),
       paymentType: fields[4] as PaymentType,
-      note: fields[5] as String?,
+      milkCategory: fields[5] as MilkCategory,
+      note: fields[6] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, MilkEntry obj) {
     writer
-      ..writeByte(6)
+      ..writeByte(7)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -86,6 +94,8 @@ class MilkEntryAdapter extends TypeAdapter<MilkEntry> {
       ..writeByte(4)
       ..write(obj.paymentType)
       ..writeByte(5)
+      ..write(obj.milkCategory)
+      ..writeByte(6)
       ..write(obj.note);
   }
 }

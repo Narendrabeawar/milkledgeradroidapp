@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:milk_ledger/models/milk_category.dart';
 import 'package:milk_ledger/models/milk_entry.dart';
 import 'package:milk_ledger/models/payment_type.dart';
 import 'package:milk_ledger/providers.dart';
@@ -21,6 +22,7 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
   final _priceCtrl = TextEditingController();
   final _noteCtrl = TextEditingController();
   PaymentType _paymentType = PaymentType.cash;
+  MilkCategory? _milkCategory;
   MilkEntry? _editingEntry;
   bool _loadedRouteArgs = false;
 
@@ -31,12 +33,20 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
     _priceCtrl.text = NumberFormat('##0.##').format(defaultPrice);
     // Default liters = 1.0
     _litersCtrl.text = '1.0';
+    // Set default category
+    final categories = ref.read(categoriesProvider);
+    _milkCategory = categories.isNotEmpty ? categories.first : null;
+
     // Prefill from last entry if available
     final last = ref.read(entriesProvider.notifier).lastEntry;
     if (last != null) {
       _litersCtrl.text = NumberFormat('##0.##').format(last.liters);
       _priceCtrl.text = NumberFormat('##0.##').format(last.pricePerLiter);
       _paymentType = last.paymentType;
+      _milkCategory = last.milkCategory;
+    } else if (_milkCategory != null) {
+      // If no last entry but we have a default category, use its default price
+      _priceCtrl.text = NumberFormat('##0.##').format(_milkCategory!.defaultPricePerLiter);
     }
   }
 
@@ -51,9 +61,13 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
       _litersCtrl.text = NumberFormat('##0.##').format(args.liters);
       _priceCtrl.text = NumberFormat('##0.##').format(args.pricePerLiter);
       _paymentType = args.paymentType;
+      _milkCategory = args.milkCategory;
       if (args.note != null) {
         _noteCtrl.text = args.note!;
       }
+    } else if (_milkCategory != null) {
+      // For new entries, set default price based on selected category
+      _priceCtrl.text = NumberFormat('##0.##').format(_milkCategory!.defaultPricePerLiter);
     }
     _loadedRouteArgs = true;
   }
@@ -89,6 +103,7 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
   @override
   Widget build(BuildContext context) {
     final currency = ref.watch(settingsProvider).currency;
+    final categories = ref.watch(categoriesProvider);
     return Scaffold(
       appBar: AppBar(title: Text(_isEditing ? 'Edit Entry' : 'Add Entry')),
       body: Form(
@@ -139,13 +154,34 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
             ),
             const SizedBox(height: 12),
             DropdownButtonFormField<PaymentType>(
-              value: _paymentType,
+              initialValue: _paymentType,
               items: const [
                 DropdownMenuItem(value: PaymentType.cash, child: Text('Cash')),
                 DropdownMenuItem(value: PaymentType.credit, child: Text('Credit')),
               ],
               onChanged: (v) => setState(() => _paymentType = v ?? PaymentType.cash),
               decoration: const InputDecoration(labelText: 'Payment Type'),
+            ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<MilkCategory>(
+              initialValue: _milkCategory,
+              items: categories.map((category) {
+                return DropdownMenuItem(
+                  value: category,
+                  child: Text(category.name),
+                );
+              }).toList(),
+              onChanged: (v) {
+                setState(() {
+                  _milkCategory = v;
+                  // Auto-populate price when category changes
+                  if (v != null) {
+                    _priceCtrl.text = NumberFormat('##0.##').format(v.defaultPricePerLiter);
+                  }
+                });
+              },
+              decoration: const InputDecoration(labelText: 'Milk Category'),
+              validator: (v) => v == null ? 'Please select a category' : null,
             ),
             const SizedBox(height: 12),
             TextFormField(
@@ -161,6 +197,7 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
                 final liters = double.parse(_litersCtrl.text);
                 final price = double.parse(_priceCtrl.text);
                 final note = _noteCtrl.text.isEmpty ? null : _noteCtrl.text;
+                final category = _milkCategory!;
                 final notifier = ref.read(entriesProvider.notifier);
 
                 if (_isEditing) {
@@ -169,6 +206,7 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
                     liters: liters,
                     pricePerLiter: price,
                     paymentType: _paymentType,
+                    milkCategory: category,
                     note: note,
                   );
                   await notifier.update(updated);
@@ -179,6 +217,7 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
                     liters: liters,
                     pricePerLiter: price,
                     paymentType: _paymentType,
+                    milkCategory: category,
                     note: note,
                   );
                   await notifier.add(entry);

@@ -12,7 +12,13 @@ class MonthlySummaryScreen extends ConsumerStatefulWidget {
 }
 
 class _MonthlySummaryScreenState extends ConsumerState<MonthlySummaryScreen> {
-  DateTime _month = DateTime(DateTime.now().year, DateTime.now().month);
+  late DateTime _month;
+
+  @override
+  void initState() {
+    super.initState();
+    _month = DateTime(DateTime.now().year, DateTime.now().month);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -23,6 +29,9 @@ class _MonthlySummaryScreenState extends ConsumerState<MonthlySummaryScreen> {
     final totalAmount = repo.monthlyTotalAmount(_month);
     final cashAmount = repo.monthlyCashAmount(_month);
     final creditAmount = repo.monthlyCreditAmount(_month);
+
+    final categoryLiters = repo.monthlyTotalLitersByCategory(_month);
+    final categoryAmounts = repo.monthlyTotalAmountByCategory(_month);
 
     return Scaffold(
       appBar: AppBar(
@@ -55,6 +64,46 @@ class _MonthlySummaryScreenState extends ConsumerState<MonthlySummaryScreen> {
           _StatCard(label: 'Total Amount ($currency)', value: NumberFormat('#,##0.##').format(totalAmount)),
           _StatCard(label: 'Cash Amount ($currency)', value: NumberFormat('#,##0.##').format(cashAmount)),
           _StatCard(label: 'Credit Amount ($currency)', value: NumberFormat('#,##0.##').format(creditAmount)),
+
+          // Category-wise breakdown
+          if (categoryAmounts.isNotEmpty) ...[
+            const SizedBox(height: 24),
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 8),
+              child: Text(
+                'Category-wise Summary',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ),
+            ...categoryAmounts.entries.map((entry) {
+              final liters = categoryLiters[entry.key] ?? 0;
+              return Card(
+                margin: const EdgeInsets.only(bottom: 8),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        entry.key,
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('Liters: ${NumberFormat('#,##0.##').format(liters)}'),
+                          Text('Amount: ${NumberFormat('#,##0.##').format(entry.value)} $currency'),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }),
+          ],
         ],
       ),
     );

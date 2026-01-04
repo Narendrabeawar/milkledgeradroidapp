@@ -18,11 +18,8 @@ class NotificationService {
     // The notification plugin will handle local time correctly with wallClockTime interpretation
     // We'll use UTC as the base and let the system interpret it as local time
     try {
-      // Try to detect timezone from offset and find matching location
-      final now = DateTime.now();
-      final offsetHours = now.timeZoneOffset.inHours;
-      // Use a common timezone based on offset (this is a simplification)
-      // For most use cases, this will work correctly with wallClockTime interpretation
+      // Use UTC as the base and let the system interpret it as local time
+      // This works correctly with wallClockTime interpretation for most use cases
       tz.setLocalLocation(tz.UTC);
     } catch (e) {
       debugPrint('Error configuring timezone, using UTC: $e');

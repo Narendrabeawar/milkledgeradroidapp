@@ -5,6 +5,7 @@ import 'package:milk_ledger/screens/dashboard_screen.dart';
 import 'package:milk_ledger/screens/add_entry_screen.dart';
 import 'package:milk_ledger/screens/monthly_summary_screen.dart';
 import 'package:milk_ledger/screens/settings_screen.dart';
+import 'package:milk_ledger/screens/category_management_screen.dart';
 
 final GlobalKey<NavigatorState> appNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -33,6 +34,7 @@ class MilkLedgerApp extends StatelessWidget {
           AddEntryScreen.route: (_) => const AddEntryScreen(),
           MonthlySummaryScreen.route: (_) => const MonthlySummaryScreen(),
           SettingsScreen.route: (_) => const SettingsScreen(),
+          CategoryManagementScreen.route: (_) => const CategoryManagementScreen(),
         },
       ),
     );

@@ -30,9 +30,8 @@ class _DashboardBody extends ConsumerWidget {
     final entries = ref.watch(entriesProvider);
     final currency = ref.watch(settingsProvider).currency;
     final notifier = ref.read(entriesProvider.notifier);
-
-    final today = DateTime.now();
-    final monthLabel = DateFormat('MMMM yyyy').format(today);
+    final currentMonth = ref.watch(currentMonthProvider);
+    final monthNotifier = ref.read(currentMonthProvider.notifier);
 
     Future<bool> confirmDuplicate(BuildContext context) async {
       final result = await showDialog<bool>(
@@ -71,8 +70,47 @@ class _DashboardBody extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Milk Ledger - $monthLabel'),
+        title: Row(
+          children: [
+            Image.asset('assets/images/app_icon.png', height: 28, width: 28),
+            const SizedBox(width: 8),
+            const Text('Milk Ledger'),
+          ],
+        ),
         actions: [
+          // Month Selector
+          Container(
+            margin: const EdgeInsets.symmetric(vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: DropdownButton<DateTime>(
+              value: currentMonth,
+              underline: const SizedBox(),
+              icon: const Icon(Icons.expand_more, size: 20),
+              items: _generateMonthList().map((month) {
+                return DropdownMenuItem<DateTime>(
+                  value: month,
+                  child: Text(
+                    DateFormat('MMM yyyy').format(month),
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: month.year == currentMonth.year && month.month == currentMonth.month
+                        ? FontWeight.bold
+                        : FontWeight.normal,
+                    ),
+                  ),
+                );
+              }).toList(),
+              onChanged: (DateTime? newMonth) {
+                if (newMonth != null) {
+                  monthNotifier.state = newMonth;
+                }
+              },
+            ),
+          ),
+          const SizedBox(width: 8),
           IconButton(
             tooltip: 'Summary',
             onPressed: () => Navigator.pushNamed(context, MonthlySummaryScreen.route),
@@ -145,6 +183,19 @@ class _DashboardBody extends ConsumerWidget {
               },
             ),
     );
+  }
+
+  List<DateTime> _generateMonthList() {
+    final now = DateTime.now();
+    final months = <DateTime>[];
+
+    // Generate months from 2 years ago to 1 year in future
+    for (int i = -24; i <= 12; i++) {
+      final month = DateTime(now.year, now.month + i, 1);
+      months.add(month);
+    }
+
+    return months;
   }
 }
 
